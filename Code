@@ -1,0 +1,141 @@
+//***从这个栈的例子的学习，深刻理解结构体变量名和指向结构体变量的指针的区别，即什么时候该用struct->xxx（struct为指向结构体变量的指针），
+//什么时候该用struct.xxx（struct为结构体的变量名）；深刻理解形参在如何修改赋值的情况下，会改变实参的值，
+//并不是必须要传入指针的指针（这个是链表创建传入空指针的特例，方便在形参函数中，用malloc指定空间）
+//同时，还要清楚的理解c++中对“&”做的封装，&引用符号的工作机制及产生原理***
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <malloc.h>
+#include <math.h>
+#include <ctype.h>
+
+#define INIT_SIZE 5  //栈的初始空间大小
+#define INCRE_SIZE 2  //栈空间增量
+#define MAXBUFFER 10  //字符串常量最大空间
+//#define OVERFLOW 0  //存取分配失败
+
+typedef struct {
+	int *base;    //指向栈底，也是栈空间的地址
+	int *top;    //始终指向有效元素的上一个位置
+	int initsize;    //栈的初始空间大小
+}SqStack;
+
+//栈初始化
+void Init_Stack(SqStack *S) {
+	S->initsize = INIT_SIZE;
+	S->base = (int *)malloc(INIT_SIZE*sizeof(int));
+
+	S->top = S->base;
+}
+
+//元素m入栈
+void Push(SqStack *S, int m) {
+	//判断栈是否满，满则增加栈的容量
+	if ((S->top - S->base) >= S->initsize)
+	{
+		S->base = (int *)realloc(S->base, (S->initsize + INCRE_SIZE)*sizeof(int));
+		if (!S->base) exit(OVERFLOW);//存储分配失败
+		S->top = S->base + S->initsize;
+		S->initsize = S->initsize + INCRE_SIZE;
+	}
+
+	*(S->top) = m;
+	printf("入栈元素：%d\n", *(S->top));
+	S->top++;
+
+	//和上面效果一样，数组地址加法原理
+	//S->top = S->top + 1;
+}
+
+//遍历栈元素（思考为什么这个地方只能是.而不能是->）
+void View_Stack(SqStack S) {
+	int i = 0;
+	printf("读取栈的元素：");
+	while (S.base + i < S.top) {
+		printf("%d ", *(S.base + i++));
+	}
+	printf("\n");
+}
+
+//弹栈
+void Pop(SqStack *S, int *val) {
+	*val = *--S->top;
+	printf("弹出栈顶元素为：%d\n", *val);
+}
+
+void Destroy(SqStack *S) {
+	//若栈已清空则销毁栈
+	if (S->top == S->base) free(S->base);
+}
+
+int main()
+{
+	//初始化变量
+	SqStack S;
+	char c;
+	char array[MAXBUFFER];
+	int i = 0;
+	int n1;
+	int n2;
+	int mid;
+
+	//初始化栈
+	Init_Stack(&S);
+
+	printf("输入要进栈的元素，以#结束\n");
+	scanf("%c", &c);
+	while (c != '#') {
+		while (isdigit(c)) {
+			array[i++] = c;
+			array[i] = '\0';
+			scanf("%c", &c);
+		}
+
+		if (i != 0) {
+			Push(&S, atoi(array));
+			i = 0;
+		}
+		if (c == ' ') {
+			scanf("%c", &c);
+			continue;
+		}
+		if (c == '#') continue;
+		switch (c) {
+		case '+':
+			Pop(&S, &n1);
+			Pop(&S, &n2);
+			mid = n1 + n2;
+			Push(&S, mid);
+			break;
+		case '-':
+			Pop(&S, &n1);
+			Pop(&S, &n2);
+			mid = n1 - n2;
+			Push(&S, mid);
+			break;
+		case '*':
+			Pop(&S, &n1);
+			Pop(&S, &n2);
+			mid = n1*n2;
+			Push(&S, mid);
+			break;
+		case '/':
+			Pop(&S, &n1);
+			Pop(&S, &n2);
+			mid = n1 / n2;
+			Push(&S, mid);
+			break;
+		default:
+			printf("输入不符合规范，请重新输入！");
+		}
+		scanf("%c", &c);
+	}
+	getchar();
+
+	View_Stack(S);
+	Destroy(&S);
+
+	printf("\n");
+	getchar();
+	return 0;
+}
